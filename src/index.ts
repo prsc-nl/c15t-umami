@@ -22,9 +22,14 @@ const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ut
 /** For c15t's clearOnRevocation. */
 export const umamiCookies = [VISITOR_COOKIE, CAMPAIGN_COOKIE];
 
+export type UmamiEventData = Record<string, string | number | boolean>;
+
 type UmamiPayload = Record<string, unknown>;
 type UmamiWindow = Window & {
-  umami?: { identify: (id: string, data?: Record<string, string>) => void };
+  umami?: {
+    identify: (id: string, data?: Record<string, string>) => void;
+    track: (name: string, data?: UmamiEventData) => void;
+  };
   [BEFORE_SEND]?: (type: string, payload: UmamiPayload) => UmamiPayload;
 };
 
@@ -64,6 +69,15 @@ function campaign(landing: Record<string, string>, cookieDomain?: string): Recor
   if (Object.keys(landing).length === 0) return {};
   writeCookie(CAMPAIGN_COOKIE, JSON.stringify(landing), cookieDomain);
   return landing;
+}
+
+/**
+ * Records a custom event from code. Does nothing on the server or when Umami hasn't loaded or
+ * was blocked. Pass a union as `Name` to have typos in event names caught at build time.
+ */
+export function track<Name extends string = string>(name: Name, data?: UmamiEventData): void {
+  if (typeof window === "undefined") return;
+  (window as UmamiWindow).umami?.track(name, data);
 }
 
 export function umami({

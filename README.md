@@ -36,6 +36,32 @@ export default defineConsentConfig({
 });
 ```
 
+## Custom events
+
+For clicks you don't need this package. Umami's tracker picks up the attributes:
+
+```tsx
+<a href="/plan.pdf" data-umami-event="download" data-umami-event-type="plus">Download</a>
+```
+
+From code, use `track`. It does nothing on the server or when Umami hasn't loaded or was blocked:
+
+```ts
+import { track } from "@prsc-nl/c15t-umami";
+
+track("video-finished", { video: "intro" });
+```
+
+To catch typos at build time, pass your event names:
+
+```ts
+type SiteEvent = "video-finished" | "map-opened";
+
+track<SiteEvent>("video-finished");
+```
+
+Events also fire for visitors who haven't given consent, so keep them anonymous: no names, email addresses or form input.
+
 ## Options
 
 | Option | Required | What it does |
