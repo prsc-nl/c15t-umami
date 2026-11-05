@@ -47,3 +47,7 @@ export default defineConsentConfig({
 | `category` | No | The c15t consent category for everything beyond the stats. Defaults to `measurement`. |
 
 Whether the cookie-free stats may run without consent is your call and depends on your jurisdiction. Replays and heatmaps always wait for consent here. This isn't legal advice.
+
+## Releasing
+
+Bump `version` in `package.json` and push to `main`. GitHub Actions publishes it to npm; pushes that don't change the version publish nothing.
