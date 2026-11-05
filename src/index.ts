@@ -11,11 +11,15 @@ export type UmamiOptions = {
   cookieDomain?: string;
   /** The consent category for everything beyond the cookie-free stats. */
   category?: Script["category"];
+  /** Also send load-speed measurements (Core Web Vitals) with each page. Off by default. */
+  performance?: boolean;
 };
 
 const VISITOR_COOKIE = "umami_visitor";
 const CAMPAIGN_COOKIE = "umami_campaign";
 const BEFORE_SEND = "umamiBeforeSend";
+const DISABLED_KEY = "umami.disabled";
+const MAX_QUEUED = 50;
 const YEAR = 60 * 60 * 24 * 365;
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
@@ -42,6 +46,31 @@ function writeCookie(name: string, value: string, cookieDomain?: string) {
   const domain = cookieDomain ? `; domain=${cookieDomain}` : "";
   const secure = location.protocol === "https:" ? "; secure" : "";
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${YEAR}; samesite=lax${domain}${secure}`;
+}
+
+// Umami stores the query string and click IDs (gclid, fbclid, ...) it finds in a URL, also for
+// visitors who declined. So only the UTMs reach it, which also keeps one page from splitting
+// into many entries.
+function keepUtms(url: string): string {
+  const start = url.indexOf("?");
+  if (start === -1) return url;
+  const hashAt = url.indexOf("#", start);
+  const end = hashAt === -1 ? url.length : hashAt;
+  const params = new URLSearchParams(url.slice(start + 1, end));
+  for (const key of [...params.keys()]) if (!UTM_KEYS.includes(key)) params.delete(key);
+  const query = params.toString();
+  return url.slice(0, start) + (query ? `?${query}` : "") + url.slice(end);
+}
+
+// ?notrack switches this browser off in Umami's stats, ?track on again, for staff and clients.
+function applyTrackingSwitch() {
+  const params = new URLSearchParams(location.search);
+  try {
+    if (params.has("notrack")) localStorage.setItem(DISABLED_KEY, "1");
+    if (params.has("track")) localStorage.removeItem(DISABLED_KEY);
+  } catch {
+    // Storage can be blocked. Then the switch just doesn't stick.
+  }
 }
 
 // The UTMs of the landing page, held in memory until someone accepts, which can be a page later.
@@ -71,13 +100,24 @@ function campaign(landing: Record<string, string>, cookieDomain?: string): Recor
   return landing;
 }
 
+// Events from before the tracker loaded. A 404 page, say, fires its event straight away.
+const queued: Array<[string, UmamiEventData | undefined]> = [];
+
+function flushQueue() {
+  const tracker = (window as UmamiWindow).umami;
+  if (tracker) for (const [name, data] of queued.splice(0)) tracker.track(name, data);
+}
+
 /**
- * Records a custom event from code. Does nothing on the server or when Umami hasn't loaded or
- * was blocked. Pass a union as `Name` to have typos in event names caught at build time.
+ * Records a custom event from code. Waits for the tracker if it hasn't loaded yet, and does
+ * nothing on the server or if it never loads. Pass a union as `Name` to have typos in event
+ * names caught at build time.
  */
 export function track<Name extends string = string>(name: Name, data?: UmamiEventData): void {
   if (typeof window === "undefined") return;
-  (window as UmamiWindow).umami?.track(name, data);
+  const tracker = (window as UmamiWindow).umami;
+  if (tracker) tracker.track(name, data);
+  else if (queued.length < MAX_QUEUED) queued.push([name, data]);
 }
 
 export function umami({
@@ -86,6 +126,7 @@ export function umami({
   recorderUrl,
   cookieDomain,
   category = "measurement",
+  performance = false,
 }: UmamiOptions): Script[] {
   if (typeof window === "undefined") return [];
 
@@ -103,16 +144,29 @@ export function umami({
     category,
     src: scriptUrl,
     alwaysLoad: true, // the stats are cookie-free, so they don't wait for consent
-    attributes: { "data-website-id": websiteId, "data-before-send": BEFORE_SEND },
+    attributes: {
+      "data-website-id": websiteId,
+      "data-before-send": BEFORE_SEND,
+      ...(performance ? { "data-performance": "true" } : {}),
+    },
     onBeforeLoad() {
-      // The cookie only exists after consent, so this also marks the first pageview of someone
-      // who accepted on an earlier visit.
+      applyTrackingSwitch();
       (window as UmamiWindow)[BEFORE_SEND] = (_type, payload) => {
+        const cleaned = { ...payload };
+        for (const key of ["url", "referrer"]) {
+          const value = cleaned[key];
+          if (typeof value === "string") cleaned[key] = keepUtms(value);
+        }
+        // The cookie only exists after consent, so this also marks the first pageview of
+        // someone who accepted on an earlier visit.
         const id = readCookie(VISITOR_COOKIE);
-        return id ? { ...payload, id } : payload;
+        return id ? { ...cleaned, id } : cleaned;
       };
     },
-    onLoad: identify,
+    onLoad(info) {
+      identify(info);
+      flushQueue();
+    },
     onConsentChange: identify,
   };
 
