@@ -110,7 +110,7 @@ Open any page with `?notrack` to stop counting this browser in Umami, and with `
 | `scriptUrl` | Yes | Where your Umami tracker lives. Events go to the same host. |
 | `recorderUrl` | No | Umami's recorder script. Left out, there are no replays or heatmaps. |
 | `cookieDomain` | No | Shares the cookies across subdomains. |
-| `performance` | No | Also sends load-speed measurements (Core Web Vitals) with each page. Off by default. |
+| `performance` | No | Sends load-speed measurements (Core Web Vitals) with each page. On by default; `false` turns it off. |
 | `trackLinks` | No | Counts external links, downloads and `mailto:`/`tel:` links as events. Off by default. |
 | `category` | No | The c15t consent category for everything beyond the stats. Defaults to `measurement`. |
 

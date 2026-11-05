@@ -11,7 +11,7 @@ export type UmamiOptions = {
   cookieDomain?: string;
   /** The consent category for everything beyond the cookie-free stats. */
   category?: Script["category"];
-  /** Also send load-speed measurements (Core Web Vitals) with each page. Off by default. */
+  /** Send load-speed measurements (Core Web Vitals) with each page. On by default. */
   performance?: boolean;
   /** Count clicks on external links, file downloads and mailto/tel links as events. Off by default. */
   trackLinks?: boolean;
@@ -153,7 +153,7 @@ export function umami({
   recorderUrl,
   cookieDomain,
   category = "measurement",
-  performance = false,
+  performance = true,
   trackLinks = false,
 }: UmamiOptions): Script[] {
   if (typeof window === "undefined") return [];
