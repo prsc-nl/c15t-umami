@@ -15,15 +15,20 @@ Click IDs such as `gclid` and `fbclid` are never stored.
 import { umami, umamiCookies } from "@prsc-nl/c15t-umami";
 import { defineConsentConfig } from "c15t/next";
 
+// Keeps previews and localhost out of the stats. The helper has no domain check of its own.
+const onLiveDomain =
+  typeof window !== "undefined" && ["example.com", "www.example.com"].includes(window.location.hostname);
+
 export default defineConsentConfig({
   scripts: [
-    ...umami({
-      websiteId: "your-website-id",
-      scriptUrl: "https://umami.example.com/script.js",
-      hosts: ["example.com", "www.example.com"],
-      recorderUrl: "https://umami.example.com/recorder.js", // optional
-      cookieDomain: ".example.com", // optional
-    }),
+    ...(onLiveDomain
+      ? umami({
+          websiteId: "your-website-id",
+          scriptUrl: "https://umami.example.com/script.js",
+          recorderUrl: "https://umami.example.com/recorder.js", // optional
+          cookieDomain: ".example.com", // optional
+        })
+      : []),
   ],
   clearOnRevocation: {
     measurement: { cookies: [...umamiCookies] },
@@ -37,7 +42,6 @@ export default defineConsentConfig({
 | --- | --- | --- |
 | `websiteId` | Yes | The website ID from Umami. |
 | `scriptUrl` | Yes | Where your Umami tracker lives. Events go to the same host. |
-| `hosts` | Yes | The only hostnames that load anything, so previews and localhost stay out of the stats. |
 | `recorderUrl` | No | Umami's recorder script. Left out, there are no replays or heatmaps. |
 | `cookieDomain` | No | Shares the cookies across subdomains. |
 | `category` | No | The c15t consent category for everything beyond the stats. Defaults to `measurement`. |

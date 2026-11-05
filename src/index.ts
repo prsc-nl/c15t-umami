@@ -5,8 +5,6 @@ import type { Script } from "c15t";
 export type UmamiOptions = {
   websiteId: string;
   scriptUrl: string;
-  /** Only these hostnames load anything, so previews and localhost stay out of the stats. */
-  hosts: string[];
   /** Replays and heatmaps, behind consent. Leave out to skip them. */
   recorderUrl?: string;
   /** Share the cookies across subdomains, for example ".example.com". */
@@ -71,12 +69,11 @@ function campaign(landing: Record<string, string>, cookieDomain?: string): Recor
 export function umami({
   websiteId,
   scriptUrl,
-  hosts,
   recorderUrl,
   cookieDomain,
   category = "measurement",
 }: UmamiOptions): Script[] {
-  if (typeof window === "undefined" || !hosts.includes(location.hostname)) return [];
+  if (typeof window === "undefined") return [];
 
   const landing = readLandingCampaign();
 

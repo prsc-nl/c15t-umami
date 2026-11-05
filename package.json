@@ -1,6 +1,6 @@
 {
   "name": "@prsc-nl/c15t-umami",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Umami as c15t scripts: cookie-free stats for everyone; a visitor ID, landing campaign and replays after consent.",
   "license": "MIT",
   "type": "module",
