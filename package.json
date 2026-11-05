@@ -1,16 +1,36 @@
 {
   "name": "@prsc-nl/c15t-umami",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Umami as c15t scripts: cookie-free stats for everyone; a visitor ID, landing campaign and replays after consent.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
-  "repository": { "type": "git", "url": "git+https://github.com/prsc-nl/c15t-umami.git" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prsc-nl/c15t-umami.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
-  "scripts": { "build": "tsc", "prepublishOnly": "npm run build" },
-  "peerDependencies": { "c15t": ">=3.2.2 <4" },
-  "devDependencies": { "c15t": "3.2.2", "typescript": "^5" }
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "c15t": ">=3.2.2 <4"
+  },
+  "devDependencies": {
+    "c15t": "3.2.2",
+    "typescript": "^5"
+  }
 }
