@@ -70,6 +70,18 @@ track<SiteEvent>("video-finished");
 
 Events also fire for visitors who haven't given consent, so keep them anonymous: no names, email addresses or form input.
 
+### Links and downloads
+
+Set `trackLinks: true` to count these without adding attributes. Each event is recorded with the page it was clicked on, and query strings are left out.
+
+| Event | When | Data |
+| --- | --- | --- |
+| `outbound-link` | A link to another hostname, subdomains included | `url` |
+| `file-download` | A link with `download`, or to a file such as a PDF | `file` |
+| `contact-click` | A `mailto:` or `tel:` link | `type`, `to` |
+
+A link with its own `data-umami-event` is left alone, so it isn't counted twice.
+
 ### 404 pages
 
 To see which URLs people land on that don't exist, call `track` from your not-found page:
@@ -99,6 +111,7 @@ Open any page with `?notrack` to stop counting this browser in Umami, and with `
 | `recorderUrl` | No | Umami's recorder script. Left out, there are no replays or heatmaps. |
 | `cookieDomain` | No | Shares the cookies across subdomains. |
 | `performance` | No | Also sends load-speed measurements (Core Web Vitals) with each page. Off by default. |
+| `trackLinks` | No | Counts external links, downloads and `mailto:`/`tel:` links as events. Off by default. |
 | `category` | No | The c15t consent category for everything beyond the stats. Defaults to `measurement`. |
 
 Whether the cookie-free stats may run without consent is your call and depends on your jurisdiction. Replays and heatmaps always wait for consent here. This isn't legal advice.

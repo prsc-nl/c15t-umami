@@ -13,6 +13,8 @@ export type UmamiOptions = {
   category?: Script["category"];
   /** Also send load-speed measurements (Core Web Vitals) with each page. Off by default. */
   performance?: boolean;
+  /** Count clicks on external links, file downloads and mailto/tel links as events. Off by default. */
+  trackLinks?: boolean;
 };
 
 const VISITOR_COOKIE = "umami_visitor";
@@ -120,6 +122,31 @@ export function track<Name extends string = string>(name: Name, data?: UmamiEven
   else if (queued.length < MAX_QUEUED) queued.push([name, data]);
 }
 
+const DOWNLOAD = /\.(pdf|zip|docx?|xlsx?|pptx?|csv|dwg|ics)$/i;
+let watchingLinks = false;
+
+// Fires as the click happens. Umami sends with keepalive, so leaving the page doesn't lose it.
+function trackLink(event: MouseEvent) {
+  const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+  if (!(link instanceof HTMLAnchorElement) || link.hasAttribute("data-umami-event")) return;
+  const { protocol, hostname, pathname } = link;
+  if (protocol === "mailto:" || protocol === "tel:") {
+    track("contact-click", { type: protocol.slice(0, -1), to: link.href.slice(protocol.length).split("?")[0] });
+  } else if (protocol !== "http:" && protocol !== "https:") {
+    return;
+  } else if (link.hasAttribute("download") || DOWNLOAD.test(pathname)) {
+    track("file-download", { file: decodeURIComponent(pathname.split("/").pop() ?? pathname) });
+  } else if (hostname !== location.hostname) {
+    track("outbound-link", { url: hostname + pathname });
+  }
+}
+
+function watchLinks() {
+  if (watchingLinks) return;
+  watchingLinks = true;
+  document.addEventListener("click", trackLink, { capture: true });
+}
+
 export function umami({
   websiteId,
   scriptUrl,
@@ -127,6 +154,7 @@ export function umami({
   cookieDomain,
   category = "measurement",
   performance = false,
+  trackLinks = false,
 }: UmamiOptions): Script[] {
   if (typeof window === "undefined") return [];
 
@@ -166,6 +194,7 @@ export function umami({
     onLoad(info) {
       identify(info);
       flushQueue();
+      if (trackLinks) watchLinks();
     },
     onConsentChange: identify,
   };
